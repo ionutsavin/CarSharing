@@ -128,3 +128,36 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Flutter specific files
+# Flutter build and tool files
+build/
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+
+# IDE specific files
+.idea/
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Flutter generated files
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android / iOS / macOS build files
+*.apk
+*.ipa
+android/.gradle
+ios/.symlinks
+macos/.symlinks
+
+# Temporary files
+*.tmp
