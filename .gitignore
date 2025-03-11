@@ -161,3 +161,6 @@ macos/.symlinks
 
 # Temporary files
 *.tmp
+
+__pycache__/
+*.pyc
