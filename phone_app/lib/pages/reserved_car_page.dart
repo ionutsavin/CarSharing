@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'available_cars_page.dart';
+import 'car_control_page.dart';
 
 class ReservedCarPage extends StatefulWidget {
   final Map<String, dynamic> car;
@@ -17,6 +20,7 @@ class ReservedCarPageState extends State<ReservedCarPage> {
   Timer? _timer;
   int _secondsLeft = 60;
   bool _isCanceled = false;
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   @override
   void initState() {
@@ -45,7 +49,7 @@ class ReservedCarPageState extends State<ReservedCarPage> {
     String url;
 
     if(kIsWeb){
-      url = 'http://localhost:3000/cancel-reservation/${widget.car['id']}';
+      url = 'http://localhost:3000/cancel-reservation/${widget.car['vin']}';
     } else {
       url = 'http://10.0.2.2:3000/cancel-reservation/${widget.car['vin']}';
     }
@@ -74,14 +78,51 @@ class ReservedCarPageState extends State<ReservedCarPage> {
     });
   }
 
-  void _startRental() {
-    _timer?.cancel();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Rental started successfully!'),
-        backgroundColor: Colors.green,
-      ),
+  Future<void> _startRental() async {
+    final String vin = widget.car['vin'];
+    final String? token = await _storage.read(key: 'jwt_token');
+    String url;
+    if(kIsWeb){
+      url = 'http://localhost:3000/start-rental/$vin';
+    } else {
+      url = 'http://10.0.2.2:3000/start-rental/$vin';
+    }
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        "model": widget.car['full_name'],
+        "location": widget.car['location'],
+      }),
     );
+
+    if (response.statusCode == 200) {
+       _timer?.cancel();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Rental started successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => CarControlPage(vin: vin)),
+      );
+    } else {
+      if(!mounted) return;
+      final errorMessage = jsonDecode(response.body)['error'];
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error starting rental: $errorMessage'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

@@ -3,6 +3,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 const dotenv = require('dotenv');
+const axios = require('axios');
 const app = express();
 const port = 3000;
 
@@ -20,6 +21,8 @@ const pool = new Pool({
     password: process.env.DB_PASS,
     port: process.env.DB_PORT
 });
+
+const TELEMATICS_URL = 'http://127.0.0.1:5000';
 
 app.post('/register', async (req, res) => {
     const { username, password, repeatPassword, hasDrivingLicense } = req.body;
@@ -153,6 +156,85 @@ app.post('/cancel-reservation/:vin', async (req, res) => {
         res.status(200).json({ message: 'Reservation canceled', car: updateResult.rows[0] });
     } catch (error) {
         console.error('Error canceling reservation:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/start-rental/:vin', async (req, res) => {
+    const { vin } = req.params;
+    const { model, location } = req.body;
+    const token = req.headers['authorization']?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Authorization token is required' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const username = decoded.username;
+
+        const response = await axios.post(`${TELEMATICS_URL}/start_rental`, {
+            model,
+            vin,
+            location,
+            user: username,
+        });
+
+        if (response.status === 200) {
+            const updateResult = await pool.query(
+                `UPDATE cars 
+                SET status = $1 
+                WHERE vin = $2 
+                RETURNING *`,
+                ['in use', vin]
+            );
+
+            if (updateResult.rowCount === 0) {
+                return res.status(400).json({ error: 'Car not found or cannot be started' });
+            }
+
+            const startedCar = updateResult.rows[0];
+            console.log(`Rental started for car VIN: ${vin} by user: ${username}`);
+
+            res.status(200).json({
+                message: 'Rental started successfully',
+                car: startedCar
+            });
+        } else {
+            return res.status(400).json({ error: 'Telematics system failed to start rental' });
+        }
+    } catch (error) {
+        console.error('Error starting rental:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/end-rental/:vin', async (req, res) => {
+    const { vin } = req.params;
+    console.log(`Ending rental for car VIN: ${vin}`);
+    try {
+        const response = await axios.post(`${TELEMATICS_URL}/end_rental`, { vin });
+        if (response.status === 200) {
+            const updateResult = await pool.query(
+                `UPDATE cars 
+                SET status = $1 
+                WHERE vin = $2 
+                RETURNING *`,
+                ['available', vin]
+            );
+            if (updateResult.rowCount === 0) {
+                return res.status(400).json({ error: 'Car is not rented or doesn\'t exist' });
+            }
+            console.log(`Rental ended for car VIN: ${vin}`);
+            res.status(200).json({ message: 'Rental ended successfully', car: updateResult.rows[0] });
+        }
+
+    } catch (error) {
+        if (error.response) {
+            console.error('Error ending rental:', error.response.data);
+            return res.status(error.response.status).json(error.response.data);
+        }
+        console.error('Error ending rental:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
