@@ -21,11 +21,10 @@ class AvailableCarsPageState extends State<AvailableCarsPage> {
   bool isLoading = false;
 
   final List<String> cities = [
-    'ALBA', 'ARAD', 'ARGES', 'BACAU', 'BIHOR', 'BISTRITA-NASAUD', 'BOTOSANI', 'BRAILA', 'BRASOV', 'BUZAU',
+    'ALBA', 'ARAD', 'ARGES', 'BACAU', 'BIHOR', 'BISTRITA-NASAUD', 'BOTOSANI', 'BRAILA', 'BRASOV', 'BUCURESTI', 'BUZAU',
     'CALARASI', 'CARAS-SEVERIN', 'CLUJ', 'CONSTANTA', 'COVASNA', 'DAMBOVITA', 'DOLJ', 'GALATI', 'GIURGIU', 'GORJ',
-    'HARGHITA', 'HUNEDOARA', 'IALOMITA', 'IASI', 'ILFOV', 'MARAMURES', 'MEHEDINTI', 'BUCURESTI', 'MURES', 'NEAMT',
-    'OLT', 'PRAHOVA', 'SALAJ', 'SATU-MARE', 'SIBIU', 'SUCEAVA', 'TELEORMAN', 'TIMIS', 'TULCEA', 'VALCEA', 'VASLUI',
-    'VRANCEA'
+    'HARGHITA', 'HUNEDOARA', 'IALOMITA', 'IASI', 'ILFOV', 'MARAMURES', 'MEHEDINTI', 'MURES', 'NEAMT', 'OLT', 
+    'PRAHOVA', 'SALAJ', 'SATU-MARE', 'SIBIU', 'SUCEAVA', 'TELEORMAN', 'TIMIS', 'TULCEA', 'VALCEA', 'VASLUI', 'VRANCEA'
   ];
 
   Future<void> _logout(BuildContext context) async {
