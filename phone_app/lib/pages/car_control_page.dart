@@ -17,10 +17,18 @@ class CarControlPageState extends State<CarControlPage> {
   bool _isEngineOn = false;
   bool _areLightsOn = false;
   bool _isCarLocked = false;
+  bool _areDoorsClosed = true;
 
   Future<void> _toggleFeature(String action) async {
+    String url;
+    if (kIsWeb) {
+      url = 'http://127.0.0.1:5000/update_status';
+    } else {
+      url = 'http://10.0.2.2:5000/update_status';
+    }
+
     final response = await http.post(
-      Uri.parse('http://10.0.2.2:5000/update_status'),
+      Uri.parse(url),
       body: jsonEncode({'vin': widget.vin, 'action': action}),
       headers: {'Content-Type': 'application/json'},
     );
@@ -32,11 +40,22 @@ class CarControlPageState extends State<CarControlPage> {
         } else if (action == 'lights') {
           _areLightsOn = !_areLightsOn;
         } else if (action == 'lock') {
-          _isCarLocked = !_isCarLocked;
+          if (_areDoorsClosed) {
+            _isCarLocked = !_isCarLocked;
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('All doors must be closed before locking!'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        } else if (action == 'doors') {
+          _areDoorsClosed = !_areDoorsClosed;
         }
       });
     } else {
-      if(!mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to toggle $action'),
@@ -48,18 +67,19 @@ class CarControlPageState extends State<CarControlPage> {
 
   Future<void> _endRental() async {
     String url;
-    if(kIsWeb){
+    if (kIsWeb) {
       url = 'http://localhost:3000/end-rental/${widget.vin}';
     } else {
       url = 'http://10.0.2.2:3000/end-rental/${widget.vin}';
     }
+
     final response = await http.post(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
     );
 
     if (response.statusCode == 200) {
-      if(!mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Rental ended successfully!'),
@@ -71,7 +91,7 @@ class CarControlPageState extends State<CarControlPage> {
         MaterialPageRoute(builder: (context) => const AvailableCarsPage()),
       );
     } else {
-      if(!mounted) return;
+      if (!mounted) return;
       final errorMessage = jsonDecode(response.body)['error'];
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -106,7 +126,7 @@ class CarControlPageState extends State<CarControlPage> {
                     IconButton(
                       icon: Icon(
                         _isCarLocked ? Icons.lock : Icons.lock_open,
-                        color: _isCarLocked ? Colors.green : Colors.red,
+                        color: _isCarLocked ? Colors.red : Colors.green,
                         size: 50,
                       ),
                       onPressed: () => _toggleFeature('lock'),
@@ -119,7 +139,7 @@ class CarControlPageState extends State<CarControlPage> {
                     IconButton(
                       icon: Icon(
                         _areLightsOn ? Icons.lightbulb : Icons.lightbulb_outline,
-                        color: _areLightsOn ? Colors.orange : Colors.grey,
+                        color: _areLightsOn ? Colors.green : Colors.red,
                         size: 50,
                       ),
                       onPressed: () => _toggleFeature('lights'),
@@ -131,16 +151,34 @@ class CarControlPageState extends State<CarControlPage> {
 
             SizedBox(height: 30),
 
-            Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Text('Engine', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                IconButton(
-                  icon: Icon(
-                    _isEngineOn ? Icons.power : Icons.power_off,
-                    color: _isEngineOn ? Colors.green : Colors.red,
-                    size: 50,
-                  ),
-                  onPressed: () => _toggleFeature('engine'),
+                Column(
+                  children: [
+                    Text('Engine', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      icon: Icon(
+                        _isEngineOn ? Icons.power : Icons.power_off,
+                        color: _isEngineOn ? Colors.green : Colors.red,
+                        size: 50,
+                      ),
+                      onPressed: () => _toggleFeature('engine'),
+                    ),
+                  ],
+                ),
+                Column(
+                  children: [
+                    Text('Doors', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      icon: Icon(
+                        _areDoorsClosed ? Icons.door_back_door : Icons.door_front_door,
+                        color: _areDoorsClosed ? Colors.red : Colors.green,
+                        size: 50,
+                      ),
+                      onPressed: () => _toggleFeature('doors'),
+                    ),
+                  ],
                 ),
               ],
             ),

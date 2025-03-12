@@ -10,6 +10,7 @@ def start_rental():
     """Handles rental start request from backend."""
     data = request.json
     vin = data.get("vin")
+    print("Start rental request received for VIN:", vin)
 
     if vin in active_cars:
         return jsonify({"error": "Car is already rented"}), 400
@@ -37,11 +38,19 @@ def update_status():
 
     action = data.get("action")
     if action == "lock":
-        car.toggle_lock()
+        if not car.are_doors_closed():
+            return jsonify({"error": "Cannot lock while doors are open"}), 400
+        else:
+            car.toggle_lock()
     elif action == "lights":
         car.toggle_lights()
     elif action == "engine":
         car.toggle_engine()
+    elif action == "doors":
+        if car.is_locked():
+            return jsonify({"error": "Cannot open doors while car is locked"}), 400
+        else:
+            car.toggle_doors()
     else:
         return jsonify({"error": "Invalid action"}), 400
     
@@ -58,13 +67,14 @@ def end_rental():
 
     car = active_cars[vin]
 
-    if not car.locked or car.lights or car.engine:
+    if car.locked or car.lights or car.engine or not car.door_closed:
         return jsonify({
             "error": "Car is not in the expected state",
             "details": {
                 "locked": car.locked,
                 "lights": car.lights,
-                "engine": car.engine
+                "engine": car.engine,
+                "doors_closed": car.door_closed
             }
         }), 400
 

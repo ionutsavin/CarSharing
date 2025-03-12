@@ -16,12 +16,8 @@ class LoginPage extends StatelessWidget {
   final FlutterSecureStorage storage = FlutterSecureStorage();
 
   Future<void> _signUserIn(BuildContext context) async {
-    String url;
-    if(kIsWeb){
-      url = 'http://localhost:3000/login';
-    } else {
-      url = 'http://10.0.2.2:3000/login';
-    }
+    String url = kIsWeb ? 'http://localhost:3000/login' : 'http://10.0.2.2:3000/login';
+
     final response = await http.post(
       Uri.parse(url),
       headers: {"Content-Type": "application/json"},
@@ -52,7 +48,7 @@ class LoginPage extends StatelessWidget {
       );
     } else {
       final errorMessage = jsonDecode(response.body)['error'];
-      if(!context.mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Login failed: $errorMessage'),
@@ -67,92 +63,76 @@ class LoginPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.yellow,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Welcome to Car Sharing',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => _showLoginModal(context),
-              child: const Text('Press here to create an account'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLoginModal(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Login',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                MyTextField(
-                  controller: userNameController,
-                  hintText: 'Username',
-                  obscureText: false,
-                ),
-                const SizedBox(height: 10),
-                MyTextField(
-                  controller: passwordController,
-                  hintText: 'Password',
-                  obscureText: true,
-                ),
-                const SizedBox(height: 20),
-                MyButton(
-                  text: 'Login',
-                  onTap: () => _signUserIn(context),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            double width = constraints.maxWidth > 600 ? 400 : constraints.maxWidth * 0.9;
+            return Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Container(
+                width: width,
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text('Not registered yet?'),
-                    const SizedBox(width: 5),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => RegisterPage()),
-                        );
-                      },
-                      child: const Text(
-                        'Register now',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
+                    const Text(
+                      'Welcome to Car Sharing',
+                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Username Field
+                    MyTextField(
+                      controller: userNameController,
+                      hintText: 'Username',
+                      obscureText: false,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Password Field
+                    MyTextField(
+                      controller: passwordController,
+                      hintText: 'Password',
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Login Button
+                    MyButton(
+                      text: 'Login',
+                      onTap: () => _signUserIn(context),
+                    ),
+                    const SizedBox(height: 15),
+
+                    // Register Option
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Not registered yet?'),
+                        const SizedBox(width: 5),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => RegisterPage()),
+                            );
+                          },
+                          child: const Text(
+                            'Register now',
+                            style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }
